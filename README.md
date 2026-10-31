@@ -45,7 +45,7 @@ cp .build/release/darkroom ~/.local/bin/   # or anywhere on your PATH
 
 ## Set up a project
 
-In the folder with your `.xcodeproj`:
+In your repository, or the folder with your `.xcodeproj`:
 
 ```sh
 darkroom init
@@ -64,13 +64,14 @@ Next: put the app's views in tools/shots/Sources/Shots/Shots.swift, then
   cd tools/shots && swift run notes-shots
 ```
 
-`init` builds the package once, to show the setup works. Options:
+`init` builds the package once, to show the setup works, and writes a README
+there on running the shots, for teammates and coding agents. Options:
 
 | Flag | Meaning |
 | --- | --- |
-| `--project <path>` | The Xcode project. Default: the only one in this folder. |
+| `--project <path>` | The Xcode project. Default: the only one in this folder or two levels below. |
 | `--target <name>` | The app's target. Default: the one named like the project. |
-| `--into <dir>` | Where the package goes. Default: `tools/shots`. |
+| `--into <dir>` | Where the package goes. Default: `tools/shots` at the top of the git repository, or next to the project outside one. |
 | `--replace <file>` | An app file to leave out and copy into `Stand-ins/`. Repeatable. See below. |
 | `--local <dir>` | Depend on a darkroom checkout instead of this repository. |
 | `--no-build` | Skip the check build. |

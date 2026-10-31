@@ -2,7 +2,7 @@ import DarkroomSetup
 import Foundation
 
 let repository = "https://github.com/alxgsv/darkroom"
-let version = "0.1.0"
+let version = "0.2.0"
 
 let usage = """
     usage: darkroom init [--project NAME.xcodeproj] [--target NAME] [--into DIR]
@@ -12,9 +12,11 @@ let usage = """
     by default: it builds the target's Swift files with its settings and
     renders the views you list to PNG, light and dark, without launching the app.
 
-      --project   the Xcode project; the only one in this folder by default
+      --project   the Xcode project; by default the only one in this folder or
+                  two levels below
       --target    the app's target; the one named like the project by default
-      --into      where to put the package; tools/shots next to the project by default
+      --into      where to put the package; by default tools/shots at the top of
+                  the project's git repository, or next to the project outside one
       --replace   an app file to leave out and copy into Stand-ins/, to edit into a
                   version without the Keychain or the network; repeatable
       --local     depend on a darkroom checkout instead of \(repository)
@@ -81,11 +83,13 @@ func setUp(_ arguments: Arguments) throws {
     if let path = arguments.project {
         project = URL(fileURLWithPath: path, relativeTo: here).standardizedFileURL
     } else {
-        let found = try fm.contentsOfDirectory(atPath: here.path).filter { $0.hasSuffix(".xcodeproj") }
+        let found = xcodeProjects(in: here)
         guard found.count == 1 else {
-            throw SetupError(found.isEmpty ? "no .xcodeproj here; pass --project" : "several projects here; pass --project")
+            throw SetupError(found.isEmpty
+                ? "no .xcodeproj here or two levels below; pass --project"
+                : "several projects: \(found.map { relativePath(from: here, to: $0) }.joined(separator: ", ")); pass --project")
         }
-        project = here.appendingPathComponent(found[0])
+        project = found[0]
     }
     let projectFolder = project.deletingLastPathComponent()
     let projectName = project.deletingPathExtension().lastPathComponent
@@ -112,8 +116,12 @@ func setUp(_ arguments: Arguments) throws {
         throw SetupError("\(target) lists its files one by one; darkroom needs Xcode 16's folder-based targets")
     }
 
+    let repositoryRoot = try run(["git", "-C", projectFolder.path, "rev-parse", "--show-toplevel"])
+    let top = repositoryRoot.status == 0
+        ? URL(fileURLWithPath: repositoryRoot.output.trimmingCharacters(in: .whitespacesAndNewlines), isDirectory: true)
+        : projectFolder
     let into = arguments.into.map { URL(fileURLWithPath: $0, relativeTo: here).standardizedFileURL }
-        ?? projectFolder.appendingPathComponent("tools/shots", isDirectory: true)
+        ?? top.appendingPathComponent("tools/shots", isDirectory: true)
     guard !fm.fileExists(atPath: into.path) else { throw SetupError("\(into.path) is there already") }
     let sources = into.appendingPathComponent("Sources/Shots", isDirectory: true)
 
@@ -169,6 +177,7 @@ func setUp(_ arguments: Arguments) throws {
 
     try scaffold.packageSwift.write(to: into.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
     try Scaffold.gitignore.write(to: into.appendingPathComponent(".gitignore"), atomically: true, encoding: .utf8)
+    try scaffold.readme.write(to: into.appendingPathComponent("README.md"), atomically: true, encoding: .utf8)
     try scaffold.shotsSwift.write(to: sources.appendingPathComponent("Shots.swift"), atomically: true, encoding: .utf8)
     for link in links {
         try fm.createSymbolicLink(

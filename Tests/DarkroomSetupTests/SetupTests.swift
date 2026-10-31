@@ -106,6 +106,15 @@ struct SourceScanTests {
         #expect(scan.hasContentView)
     }
 
+    @Test func findsAProjectInASubfolderButNotInBuildOutput() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        for path in ["notes/Notes.xcodeproj", ".build/checkouts/Other.xcodeproj", "Pods/Pods.xcodeproj", "a/b/c/Deep.xcodeproj"] {
+            try FileManager.default.createDirectory(at: folder.appendingPathComponent(path), withIntermediateDirectories: true)
+        }
+        #expect(xcodeProjects(in: folder).map(\.lastPathComponent) == ["Notes.xcodeproj"])
+    }
+
     @Test func relatesPaths() {
         let from = URL(fileURLWithPath: "/work/notes/tools/shots/Sources/Shots")
         #expect(relativePath(from: from, to: URL(fileURLWithPath: "/work/notes/Notes")) == "../../../../Notes")
@@ -122,6 +131,15 @@ struct ScaffoldTests {
         #expect(scaffold.exclusions.map(\.paths) == [["Notes/NotesApp.swift"], ["Notes/Info.plist"], ["Notes/Assets.xcassets"]])
         #expect(scaffold.packageSwift.contains(".package(path: \"/darkroom\")"))
         #expect(scaffold.packageSwift.components(separatedBy: "\"Notes/Info.plist\"").count == 2)
+    }
+
+    @Test func explainsHowToRunTheShots() {
+        var scaffold = Scaffold(name: "notes-shots", app: "Notes", settings: PackageSettings([:]), links: ["Notes"], darkroom: .local(path: "/darkroom"))
+        #expect(scaffold.readme.contains("swift run notes-shots --list"))
+        #expect(scaffold.readme.contains("`Sources/Shots/Notes` links to Notes's sources"))
+        #expect(!scaffold.readme.contains("Stand-ins"))
+        scaffold.replaced = ["Notes/Sync.swift"]
+        #expect(scaffold.readme.contains("Stand-ins"))
     }
 
     @Test func dependsOnTheAppsPackages() throws {

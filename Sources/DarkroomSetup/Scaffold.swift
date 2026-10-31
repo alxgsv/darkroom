@@ -33,6 +33,39 @@ public struct Scaffold: Sendable {
 
     public static let gitignore = "/.build\n/.swiftpm\n"
 
+    /// How to run the shots, for whoever opens the folder, people and coding agents alike.
+    public var readme: String {
+        let standIns = replaced.isEmpty ? "" : """
+
+            `Sources/Shots/Stand-ins/` replaces the app files that would reach the
+            Keychain, the network or other apps, so the shots never do.
+
+            """
+        return """
+            # \(name)
+
+            Renders \(app)'s views to PNG, light and dark, without launching the app,
+            with [darkroom](\(Self.repository)).
+
+            ```sh
+            swift run \(name)                      # every shot, light and dark
+            swift run \(name) <shot> --appearance dark --out /tmp/shots
+            swift run \(name) --list
+            ```
+
+            Each PNG's path is printed as it's written. Nothing shows on screen and
+            nothing takes focus, so the app can keep running.
+
+            The shots are in `Sources/Shots/Shots.swift`.
+            \(links.map { "`Sources/Shots/\($0)`" }.joined(separator: ", ")) \(links.count == 1 ? "links" : "link") to \(app)'s sources,
+            built with its Xcode target's Swift settings as `Package.swift` states them.
+            Rebuild after changing the app.
+            \(standIns)
+            """
+    }
+
+    static let repository = "https://github.com/alxgsv/darkroom"
+
     /// What the target leaves out and why, each path once, under its first reason.
     public var exclusions: [(reason: String, paths: [String])] {
         var seen: Set<String> = []

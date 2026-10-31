@@ -51,6 +51,25 @@ public struct SourceScan: Equatable, Sendable {
     }
 }
 
+/// The Xcode projects in `folder` and up to `depth` levels below it, so
+/// `init` works from a repository's top when the project is in a subfolder.
+public func xcodeProjects(in folder: URL, depth: Int = 2) -> [URL] {
+    let skipped: Set<String> = [".build", "build", "DerivedData", "Pods", "Carthage", "node_modules"]
+    let entries = (try? FileManager.default.contentsOfDirectory(
+        at: folder, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
+    )) ?? []
+    var found: [URL] = []
+    for entry in entries.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+        guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { continue }
+        if entry.pathExtension == "xcodeproj" {
+            found.append(entry)
+        } else if depth > 0, entry.pathExtension.isEmpty, !skipped.contains(entry.lastPathComponent) {
+            found += xcodeProjects(in: entry, depth: depth - 1)
+        }
+    }
+    return found
+}
+
 /// `to` relative to the folder `from`, for a symbolic link in `from`.
 public func relativePath(from: URL, to: URL) -> String {
     let a = from.standardizedFileURL.pathComponents
