@@ -7,8 +7,12 @@ import SwiftUI
 @MainActor
 enum Renderer {
     static func render<Context>(_ shot: Shot<Context>, context: Context, dark: Bool, wait: Duration) async throws -> Data {
-        // A view's cached display leaves out the window's own background.
-        let hosting = NSHostingView(rootView: shot.view(context).background(Color(nsColor: .windowBackgroundColor)))
+        // Filling the window keeps it at the shot's size; the hosting view
+        // would shrink it to a smaller view. A view's cached display leaves
+        // out the window's own background.
+        let hosting = NSHostingView(rootView: shot.view(context)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .windowBackgroundColor)))
         let window = NSWindow(
             contentRect: NSRect(x: -20000, y: -20000, width: shot.width, height: shot.height ?? 1000),
             styleMask: shot.window ? [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView] : .borderless,

@@ -104,8 +104,9 @@ enum Main {
 ```
 
 A `Shot` has a name, a line about it, a width, and a height (`nil` fits the
-view). Put each view in the container the app puts it in: a grouped `Form`,
-a `List`.
+view). A view smaller than that sits in the middle, as it would in a window
+of that size. Put each view in the container the app puts it in: a grouped
+`Form`, a `List`.
 
 When the shots need sample data that takes work to make, such as files in a
 temporary folder, make it in `prepare`. It runs once before the first shot,
